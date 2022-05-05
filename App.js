@@ -4,6 +4,9 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const multer = require("multer");
 const { v4: uuid } = require("uuid");
+const { graphqlHTTP } = require("express-graphql");
+const graphqlSchema = require("./graphQL/schema");
+const graphqlResolver = require("./graphQL/resolvers");
 
 const MONGO_URI =
   "mongodb+srv://maxpayne35:qGBr7naSXYmEYnw@cluster0.sp51h.mongodb.net/messages?retryWrites=true&w=majority";
@@ -51,6 +54,15 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
   next();
 });
+
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true,
+  })
+);
 
 // ERROR HANDLING
 app.use((error, req, res, next) => {
