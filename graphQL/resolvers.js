@@ -14,9 +14,10 @@ module.exports = {
     ) {
       errors.push({ message: "invalid password adress" });
     }
-
     if (errors.length > 0) {
-      const err = new Error("Invalid Input Found");
+      const err = new Error("Invalid Input !!!!");
+      err.data = errors;
+      err.statusCode = 422;
       throw err;
     }
 
