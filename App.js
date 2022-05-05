@@ -50,8 +50,15 @@ app.use(
 // Another way to solve Cors
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,PUT,PATCH");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,POST,DELETE,PUT,PATCH,OPTIONS"
+  );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  // Giving 405 not found method error
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
   next();
 });
 
