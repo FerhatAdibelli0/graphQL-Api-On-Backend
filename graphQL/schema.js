@@ -27,12 +27,19 @@ module.exports = buildSchema(`
         name:String!
         password:String!
     }
+
+    type loginData {
+        token:String!
+        userId:String!
+
+    }
+
     type RootMutation {
         createUser(userInput:userInputData):User!
     }
 
     type RootQuery {
-        ferhat:String
+        login(email:String!,password:String!):loginData!
     }
     schema {
         mutation:RootMutation
