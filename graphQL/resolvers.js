@@ -43,6 +43,11 @@ module.exports = {
   },
 
   createPost: async function ({ postInput }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Unauthenticated");
+      error.statusCode = 403;
+      throw error;
+    }
     const errors = [];
     if (
       !validator.isLength(postInput.title, { min: 5 }) ||
@@ -64,19 +69,33 @@ module.exports = {
       throw err;
     }
 
-    const post = new Post({
-      title: postInput.title,
-      content: postInput.content,
-      imageUrl: postInput.imageUrl,
-    });
-
-    const createdPost = await post.save();
-    return {
-      ...createdPost._doc,
-      _id: createdPost._id.toString(),
-      createdAt: createdPost.createdAt.toISOString(),
-      updatedAt: createdPost.updatedAt.toISOString(),
-    };
+    try {
+      const user = await User.findById(req.userId);
+      if (!user) {
+        const error = new Error("Invalid User");
+        error.statusCode = 401;
+        throw error;
+      }
+      const post = new Post({
+        title: postInput.title,
+        content: postInput.content,
+        imageUrl: postInput.imageUrl,
+        creator: user,
+      });
+      const createdPost = await post.save();
+      user.posts.push(createdPost);
+      await user.save();
+      return {
+        ...createdPost._doc,
+        _id: createdPost._id.toString(),
+        createdAt: createdPost.createdAt.toISOString(),
+        updatedAt: createdPost.updatedAt.toISOString(),
+      };
+    } catch (err) {
+      err.statusCode = 500;
+      err.message = "Error about creating post";
+      return next(err);
+    }
   },
 
   login: async function ({ email, password }) {

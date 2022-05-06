@@ -7,6 +7,7 @@ const { v4: uuid } = require("uuid");
 const { graphqlHTTP } = require("express-graphql");
 const graphqlSchema = require("./graphQL/schema");
 const graphqlResolver = require("./graphQL/resolvers");
+const Auth = require("./middleware/is-auth");
 
 const MONGO_URI =
   "mongodb+srv://maxpayne35:qGBr7naSXYmEYnw@cluster0.sp51h.mongodb.net/messages?retryWrites=true&w=majority";
@@ -61,6 +62,8 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+app.use(Auth);
 
 app.use(
   "/graphql",
