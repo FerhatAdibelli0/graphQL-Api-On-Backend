@@ -1,4 +1,5 @@
 const User = require("../Model/user");
+const Post = require("../Model/post");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
@@ -41,10 +42,47 @@ module.exports = {
     };
   },
 
+  createPost: async function ({ postInput }, req) {
+    const errors = [];
+    if (
+      !validator.isLength(postInput.title, { min: 5 }) ||
+      validator.isEmpty(postInput.title)
+    ) {
+      errors.push({ message: "invalid name" });
+    }
+    if (
+      !validator.isLength(postInput.content, { min: 5 }) ||
+      validator.isEmpty(postInput.content)
+    ) {
+      errors.push({ message: "invalid content" });
+    }
+
+    if (errors.length > 0) {
+      const err = new Error("Invalid Input !!!!");
+      err.data = errors;
+      err.statusCode = 422;
+      throw err;
+    }
+
+    const post = new Post({
+      title: postInput.title,
+      content: postInput.content,
+      imageUrl: postInput.imageUrl,
+    });
+
+    const createdPost = await post.save();
+    return {
+      ...createdPost._doc,
+      _id: createdPost._id.toString(),
+      createdAt: createdPost.createdAt.toISOString(),
+      updatedAt: createdPost.updatedAt.toISOString(),
+    };
+  },
+
   login: async function ({ email, password }) {
     const user = await User.findOne({ email: email });
     if (!user) {
-      const error = new Error("User is not found!");
+      const error = new Error("User not found!");
       error.statusCode = 401;
       throw error;
     }
