@@ -50,6 +50,7 @@ module.exports = buildSchema(`
     type RootMutation {
         createUser(userInput:userInputData):User!
         createPost(postInput:postData):Post!
+        updatePost(id:ID!,postInput:postData):Post!
     }
 
     type RootQuery {

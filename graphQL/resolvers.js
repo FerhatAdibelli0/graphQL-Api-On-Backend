@@ -134,8 +134,11 @@ module.exports = {
       throw error;
     }
     const post = await Post.findById(postId).populate("creator", "name");
-    console.log(post._doc);
-
+    if (!post) {
+      const error = new Error("Post is not found");
+      error.statusCode = 404;
+      throw error;
+    }
     return {
       ...post._doc,
       _id: post._id.toString(),
@@ -171,6 +174,37 @@ module.exports = {
         };
       }),
       totalItems: totalItems,
+    };
+  },
+
+  updatePost: async function ({ id, postInput }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Unauthenticated");
+      error.statusCode = 403;
+      throw error;
+    }
+    const post = await Post.findById(id).populate("creator");
+    if (!post) {
+      const error = new Error("Post is not found");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (post.creator._id.toString() !== req.userId) {
+      const error = new Error("Unauthorized");
+      error.statusCode = 403;
+      throw error;
+    }
+    post.title = postInput.title;
+    post.content = postInput.content;
+    if (postInput.imageUrl !== "undefined") {
+      post.imageUrl = postInput.imageUrl;
+    }
+    const updatedPost = await post.save();
+    return {
+      ...updatedPost._doc,
+      _id: updatedPost._id.toString(),
+      createdAt: updatedPost.createdAt.toISOString(),
+      updatedAt: updatedPost.updatedAt.toISOString(),
     };
   },
 };
