@@ -3,9 +3,7 @@ const Post = require("../Model/post");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
-const fs = require("fs");
-const path = require("path");
-const res = require("express/lib/response");
+const { clearImage } = require("../util/file");
 
 module.exports = {
   createUser: async ({ userInput }, req) => {
@@ -233,31 +231,67 @@ module.exports = {
 
   deletePost: async function ({ id }, req) {
     if (!req.isAuth) {
-      const error = new Error("Unauthenticated");
-      error.statusCode = 403;
+      const error = new Error("Not authenticated!");
+      error.code = 401;
       throw error;
     }
-    const deletedPost = await Post.findById(id).populate("creator");
-    if (deletedPost.creator._id.toString() !== req.userId.toString()) {
-      const error = new Error("Unauthorized");
-      error.statusCode = 403;
+    const post = await Post.findById(id);
+    if (!post) {
+      const error = new Error("No post found!");
+      error.code = 404;
       throw error;
     }
-    clearImage(deletedPost.imageUrl);
+    if (post.creator.toString() !== req.userId.toString()) {
+      const error = new Error("Not authorized!");
+      error.code = 403;
+      throw error;
+    }
+    clearImage(post.imageUrl);
     await Post.findByIdAndRemove(id);
-    const user = await User.findById(deletedPost.creator._id).populate("posts");
+    const user = await User.findById(req.userId);
     user.posts.pull(id);
-    const updatedUser = await user.save();
+    await user.save();
+    return true;
+  },
+
+  user: async function (args, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("User no found!");
+      error.code = 404;
+      throw error;
+    }
     return {
-      ...updatedUser._doc,
-      _id: updatedUser._id.toString(),
+      ...user._doc,
+      _id: user._id.toString(),
     };
   },
-};
 
-const clearImage = (pathName) => {
-  const fileDir = path.join(__dirname, "..", pathName);
-  fs.unlink(fileDir, (err) => console.log(err));
+  updateStatus: async function ({ status }, req) {
+    console.log(status);
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("User no found!");
+      error.code = 404;
+      throw error;
+    }
+    user.status = status;
+    await user.save();
+    return {
+      ...user._doc,
+      _id: user._id.toString(),
+    };
+  },
 };
 
 // For Getting Data
