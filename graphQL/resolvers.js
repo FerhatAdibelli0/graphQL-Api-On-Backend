@@ -3,6 +3,9 @@ const Post = require("../Model/post");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
+const res = require("express/lib/response");
 
 module.exports = {
   createUser: async ({ userInput }, req) => {
@@ -189,10 +192,30 @@ module.exports = {
       error.statusCode = 404;
       throw error;
     }
-    if (post.creator._id.toString() !== req.userId) {
+    if (post.creator._id.toString() !== req.userId.toString()) {
       const error = new Error("Unauthorized");
       error.statusCode = 403;
       throw error;
+    }
+    const errors = [];
+    if (
+      !validator.isLength(postInput.title, { min: 5 }) ||
+      validator.isEmpty(postInput.title)
+    ) {
+      errors.push({ message: "invalid name" });
+    }
+    if (
+      !validator.isLength(postInput.content, { min: 5 }) ||
+      validator.isEmpty(postInput.content)
+    ) {
+      errors.push({ message: "invalid content" });
+    }
+
+    if (errors.length > 0) {
+      const err = new Error("Invalid Input !!!!");
+      err.data = errors;
+      err.statusCode = 422;
+      throw err;
     }
     post.title = postInput.title;
     post.content = postInput.content;
@@ -207,6 +230,34 @@ module.exports = {
       updatedAt: updatedPost.updatedAt.toISOString(),
     };
   },
+
+  deletePost: async function ({ id }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Unauthenticated");
+      error.statusCode = 403;
+      throw error;
+    }
+    const deletedPost = await Post.findById(id).populate("creator");
+    if (deletedPost.creator._id.toString() !== req.userId.toString()) {
+      const error = new Error("Unauthorized");
+      error.statusCode = 403;
+      throw error;
+    }
+    clearImage(deletedPost.imageUrl);
+    await Post.findByIdAndRemove(id);
+    const user = await User.findById(deletedPost.creator._id).populate("posts");
+    user.posts.pull(id);
+    const updatedUser = await user.save();
+    return {
+      ...updatedUser._doc,
+      _id: updatedUser._id.toString(),
+    };
+  },
+};
+
+const clearImage = (pathName) => {
+  const fileDir = path.join(__dirname, "..", pathName);
+  fs.unlink(fileDir, (err) => console.log(err));
 };
 
 // For Getting Data
