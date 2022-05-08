@@ -94,7 +94,8 @@ module.exports = {
     } catch (err) {
       err.statusCode = 500;
       err.message = "Error about creating post";
-      return next(err);
+      throw err;
+      // check this handler
     }
   },
 
@@ -123,6 +124,36 @@ module.exports = {
     return {
       token: token,
       userId: user._id.toString(),
+    };
+  },
+
+  posts: async function ({ page }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Unauthenticated");
+      error.statusCode = 403;
+      throw error;
+    }
+    if (!page) {
+      page = 1;
+    }
+    const per_page = 2;
+    const totalItems = await Post.find().countDocuments();
+    const posts = await Post.find()
+      .skip((page - 1) * per_page)
+      .limit(per_page)
+      .sort({ createdAt: -1 })
+      .populate("creator");
+
+    return {
+      posts: posts.map((post) => {
+        return {
+          ...post._doc,
+          _id: post._id.toString(),
+          createdAt: post.createdAt.toISOString(),
+          updatedAt: post.updatedAt.toISOString(),
+        };
+      }),
+      totalItems: totalItems,
     };
   },
 };

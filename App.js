@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
+const fs = require("fs");
 const multer = require("multer");
 const { v4: uuid } = require("uuid");
 const { graphqlHTTP } = require("express-graphql");
@@ -63,7 +64,23 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(Auth);
+app.use(Auth); // every request will pass through this middleware to return an isAuth
+
+app.put("/image-file", (req, res, next) => {
+  if (!req.isAuth) {
+    throw new Error("Unauthenticated");
+  }
+  if (!req.file) {
+    return res.status(200).json({ message: "No file found" });
+  }
+  if (req.body.oldPath) {
+    clearImage(req.body.oldPath);
+  }
+  return res.status(201).json({
+    message: "New file saved",
+    imagePath: req.file.path.replace("\\", "/"),
+  });
+});
 
 app.use(
   "/graphql",
@@ -72,6 +89,7 @@ app.use(
     rootValue: graphqlResolver,
     graphiql: true,
     customFormatErrorFn: (err) => {
+      // Error handling in GraphQL
       if (!err.originalError) {
         return err;
       }
@@ -102,3 +120,8 @@ mongoose
     app.listen(8000);
   })
   .catch((err) => console.log(err));
+
+const clearImage = (pathName) => {
+  const fileDir = path.join(__dirname, "..", pathName);
+  fs.unlink(fileDir, (err) => console.log(err));
+};
