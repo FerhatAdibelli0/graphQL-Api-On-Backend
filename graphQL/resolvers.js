@@ -127,6 +127,23 @@ module.exports = {
     };
   },
 
+  post: async function ({ postId }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Unauthenticated");
+      error.statusCode = 403;
+      throw error;
+    }
+    const post = await Post.findById(postId).populate("creator", "name");
+    console.log(post._doc);
+
+    return {
+      ...post._doc,
+      _id: post._id.toString(),
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
+    };
+  },
+
   posts: async function ({ page }, req) {
     if (!req.isAuth) {
       const error = new Error("Unauthenticated");
