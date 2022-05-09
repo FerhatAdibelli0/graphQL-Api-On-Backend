@@ -58,7 +58,7 @@ module.exports = buildSchema(`
 
     type RootQuery {
         login(email:String!,password:String!):loginData!
-        posts(page:Int!):postItemsData!
+        posts(page:Int):postItemsData!
         post(postId:String!):Post!
         user:User!
     }
@@ -66,8 +66,6 @@ module.exports = buildSchema(`
         mutation:RootMutation
         query:RootQuery
     }
-
-
 `);
 
 //     For Getting Data

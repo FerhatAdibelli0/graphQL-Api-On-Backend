@@ -191,7 +191,7 @@ module.exports = {
       throw error;
     }
     if (post.creator._id.toString() !== req.userId.toString()) {
-      const error = new Error("Unauthorized");
+      const error = new Error("Editing failed! Unauthorized user");
       error.statusCode = 403;
       throw error;
     }
@@ -232,18 +232,18 @@ module.exports = {
   deletePost: async function ({ id }, req) {
     if (!req.isAuth) {
       const error = new Error("Not authenticated!");
-      error.code = 401;
+      error.statusCode = 401;
       throw error;
     }
     const post = await Post.findById(id);
     if (!post) {
       const error = new Error("No post found!");
-      error.code = 404;
+      error.statusCode = 404;
       throw error;
     }
     if (post.creator.toString() !== req.userId.toString()) {
-      const error = new Error("Not authorized!");
-      error.code = 403;
+      const error = new Error("Deleting failed! Unauthorized user");
+      error.statusCode = 403;
       throw error;
     }
     clearImage(post.imageUrl);
